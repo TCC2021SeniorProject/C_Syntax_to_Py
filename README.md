@@ -1,8 +1,12 @@
 # Modules-Syntax_parser
 A module for translator that converts C-like inline scripts to Python-like scripts.
 
-This can handle assignment, conditional statements.
-However, inputs must not include any keyword like "if", "else if", "else".
+- Can handle assignment, conditional statements.
+  - However, inputs must not include any keyword like "if", "else if", "else".
+- Reforms Syntax
+- Removes irrelevant brackets
+- Reforms brackets into relevant location
+- Forms brackets for better readability - ex) "a>= 2&&!b !=true" produces "a >= (2 and (not b != True))"
 
 Used data structure: [website](https://cap.ecn.purdue.edu/compilers/project/step1/)
 

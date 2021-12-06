@@ -14,7 +14,7 @@ Program does not handle invalid statements. Please make sure that the compiler a
 - Additional brackets are accepted, but whenever the brackets are opened it must be closed.
 - Only translates supported operators
 
-Supported operators:
+Supported operators(leftside is C-syntax and rightside is Python-syntax):
 ```py
   "&&" : "and",
   "||" : "or",
@@ -38,6 +38,13 @@ Supported operators:
   "|=" : "|=",
   "^=" : "^=",
  ```
+
+Supported expression:
+```py
+  '!' : 'not'
+  '++' : "+= 1"
+  '--' : "-= 1"
+```
 
 ## test cases:
 1. a>= 2&&!b !=true

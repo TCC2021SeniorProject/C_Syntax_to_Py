@@ -1,3 +1,15 @@
+"""
+    XXX This is a module file that only does one job
+          input:  ++b&&(!a)
+          output: b += 1 and not a
+
+    @TODO: 
+
+    @AUTHOR: Marco-Backman
+    @TARGET USER: Users who requires their single line of C assingment script and 
+                  conditional statement script to be converted to Python code
+"""
+
 #Left - C syntax, Right - Python syntax
 conditional_single_operator = { "&" : 1,
                                 "|" : 1,

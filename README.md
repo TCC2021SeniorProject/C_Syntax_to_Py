@@ -1,4 +1,4 @@
-# Modules-Syntax_parser
+# Module: C syntax to python converter
 A module for translator that converts C-like inline scripts to Python-like scripts.
 
 - Can handle assignment, conditional statements.

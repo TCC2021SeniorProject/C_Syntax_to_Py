@@ -49,7 +49,7 @@ Supported operators:
 7. ++b&&(!a)
 8. a := b++
 
-## actual output
+## actual outputs
 1. a >= (2 and (not b != True))
 2. a >= (2 and (not b != False))
 3. (a >= 2) and (not b != False)

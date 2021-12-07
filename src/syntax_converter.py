@@ -1,12 +1,13 @@
 """
-    XXX This is a module file that only does one job
+    XXX This is a module file that only does one job:
+        convert operational syntax to python scrypt
           input:  ++b&&(!a)
           output: b += 1 and not a
 
-    @TODO: 
+    @TODO:
 
     @AUTHOR: Marco-Backman
-    @TARGET USER: Users who requires their single line of C assingment script and 
+    @TARGET USER: Users who requires their single line of C assingment script and
                   conditional statement script to be converted to Python code
 """
 
@@ -45,7 +46,7 @@ conditional_operator = {"&&" : "and",
                         "&=" : "&=",
                         "|=" : "|=",
                         "^=" : "^=",}
-    
+
 left_expression = {'!' : 'not'}
 
 right_expression = {'++' : "+= 1",
@@ -124,11 +125,9 @@ class Node:
                     self.right = self.right + " " + self.right_expression
 
 class SyntaxTree:
-    def __init__(self, root):
-        self.root : Node = root
-        self.deepest_node : Node = None
-        self.py_script : str = ""
-        self.stack = []
+    def __init__(self, raw_string : str):
+        self.root = Node()
+        self.raw_string = self.to_python_keywords(raw_string)
 
     def to_python_keywords(self, line : str):
         line = line.replace("(", "")
@@ -143,6 +142,9 @@ class SyntaxTree:
         new_node.parent = walk
         walk.set_left(variable)
         walk.set_right(new_node)
+
+    def convert(self):
+        self.translate(self.raw_string , self.root)
 
     def translate(self, line : str, walk : Node):
         remainder = ""
@@ -198,9 +200,9 @@ class SyntaxTree:
                         self.translate(line[(index + 2):].strip(), walk.get_right())
                         return
                     else:
-                        print("Connection failed, empty node")  
-                #Check single charactor operators                 
-                elif singular_operator in conditional_operator: 
+                        print("Connection failed, empty node")
+                #Check single charactor operators
+                elif singular_operator in conditional_operator:
                     if walk != None:
                         self.connect_node(walk, singular_operator, remainder)
                         self.translate(line[(index + 1):].strip(), walk.get_right())
@@ -209,87 +211,74 @@ class SyntaxTree:
                         print("Connection failed, empty node")
             remainder += char
 
-    def getScript(self) -> str:
-        return self.py_script
-
-    def print_info(self, walk : Node, script : str):
+    def get_py_script(self, walk : Node, script : str):
         if type(walk) is Node:
             if type(walk.left) is str:
                 script += walk.left
             else:
-                script = self.print_info(walk.left, script + "(")
+                script = self.get_py_script(walk.left, script + "(")
             script += " " + walk.operator + " "
             if type(walk.right) is str:
                 script += walk.right
             else:
-                script =  self.print_info(walk.right, script + "(")
+                script =  self.get_py_script(walk.right, script + "(")
         if walk == self.root:
             return script
         return script + ")"
 
+string1 = "a>= 2&&!b !=true" #-> Fail: a >= (2 and (not b != True))
 
-
-string1 = "a>= 2&&!b !=true" #-> Pass: a >= (2 and (not b != True))
-
-syntax = SyntaxTree(Node())
-string1 = syntax.to_python_keywords(string1)
-syntax.translate(string1, syntax.root)
-print(syntax.print_info(syntax.root, ""))
+syntax = SyntaxTree(string1)
+syntax.convert()
+print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
 string2 = "a>=2&&!(b!=false)" #-> Pass: a >= (2 and (not b != False))
 
-syntax = SyntaxTree(Node())
-string2 = syntax.to_python_keywords(string2)
-syntax.translate(string2, syntax.root)
-print(syntax.print_info(syntax.root, ""))
+syntax = SyntaxTree(string2)
+syntax.convert()
+print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
 string3 = "(a>=2)&&!(b!=false)" #-> Pass : (a >= 2) and (not b != False)
 
-syntax = SyntaxTree(Node())
-string3 = syntax.to_python_keywords(string3)
-syntax.translate(string3, syntax.root)
-print(syntax.print_info(syntax.root, ""))
+syntax = SyntaxTree(string3)
+syntax.convert()
+print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
 
 string4 = "((a>=2))&&!(b!=4)" #-> Pass - (a >= 2) and (not b != 4)
 
-syntax = SyntaxTree(Node())
-string4 = syntax.to_python_keywords(string4)
-syntax.translate(string4, syntax.root)
-print(syntax.print_info(syntax.root, ""))
+syntax = SyntaxTree(string4)
+syntax.convert()
+print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
 string5 = "(e&&(a>=2))&&!(b!=4)" #-> Pass - e and ((a >= 2) and (not b != 4))
 
-syntax = SyntaxTree(Node())
-string5 = syntax.to_python_keywords(string5)
-syntax.translate(string5, syntax.root)
-print(syntax.print_info(syntax.root, ""))
+syntax = SyntaxTree(string5)
+syntax.convert()
+print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
-string6 = "(!a)&&b--"
+string6 = "(!a)&&b--" #-> Pass - not a and b -= 1
 
-syntax = SyntaxTree(Node()) #-> Pass - not a and b -= 1
-string6 = syntax.to_python_keywords(string6)
-syntax.translate(string6, syntax.root)
-print(syntax.print_info(syntax.root, ""))
+syntax = SyntaxTree(string6)
+syntax.convert()
+print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
 string7 = "++b&&(!a)" #-> Pass - b += 1 and not a
 
-syntax = SyntaxTree(Node())
-string7 = syntax.to_python_keywords(string7)
-syntax.translate(string7, syntax.root)
-print(syntax.print_info(syntax.root, ""))
+syntax = SyntaxTree(string7)
+syntax.convert()
+print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
 string8 = "a := b++" #-> Pass - a = b += 1
 
-syntax = SyntaxTree(Node())
-string8 = syntax.to_python_keywords(string8)
-syntax.translate(string8, syntax.root)
-print(syntax.print_info(syntax.root, ""))
+syntax = SyntaxTree(string8)
+syntax.convert()
+print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")

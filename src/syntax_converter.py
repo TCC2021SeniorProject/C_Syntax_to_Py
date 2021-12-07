@@ -128,6 +128,7 @@ class SyntaxTree:
     def __init__(self, raw_string : str):
         self.root = Node()
         self.raw_string = self.to_python_keywords(raw_string)
+        self.convert()
 
     def to_python_keywords(self, line : str):
         line = line.replace("(", "")
@@ -229,21 +230,18 @@ class SyntaxTree:
 string1 = "a>= 2&&!b !=true" #-> Fail: a >= (2 and (not b != True))
 
 syntax = SyntaxTree(string1)
-syntax.convert()
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
 string2 = "a>=2&&!(b!=false)" #-> Pass: a >= (2 and (not b != False))
 
 syntax = SyntaxTree(string2)
-syntax.convert()
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
 string3 = "(a>=2)&&!(b!=false)" #-> Pass : (a >= 2) and (not b != False)
 
 syntax = SyntaxTree(string3)
-syntax.convert()
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
@@ -251,34 +249,29 @@ print("-----------------------------")
 string4 = "((a>=2))&&!(b!=4)" #-> Pass - (a >= 2) and (not b != 4)
 
 syntax = SyntaxTree(string4)
-syntax.convert()
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
 string5 = "(e&&(a>=2))&&!(b!=4)" #-> Pass - e and ((a >= 2) and (not b != 4))
 
 syntax = SyntaxTree(string5)
-syntax.convert()
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
 string6 = "(!a)&&b--" #-> Pass - not a and b -= 1
 
 syntax = SyntaxTree(string6)
-syntax.convert()
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
 string7 = "++b&&(!a)" #-> Pass - b += 1 and not a
 
 syntax = SyntaxTree(string7)
-syntax.convert()
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
 string8 = "a := b++" #-> Pass - a = b += 1
 
 syntax = SyntaxTree(string8)
-syntax.convert()
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")

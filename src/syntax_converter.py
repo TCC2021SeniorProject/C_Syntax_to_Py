@@ -3,9 +3,7 @@
         convert operational syntax to python scrypt
           input:  ++b&&(!a)
           output: b += 1 and not a
-
     @TODO:
-
     @AUTHOR: Marco-Backman
     @TARGET USER: Users who requires their single line of C assingment script and
                   conditional statement script to be converted to Python code
@@ -136,14 +134,6 @@ class SyntaxTree:
         line = line.replace("false", "False")
         return line
 
-    #Set string on left, operator on the middle, and empty node on the right
-    def connect_node(self, walk : Node, operator : str, variable : str):
-        walk.set_operator(conditional_operator[operator])
-        new_node = Node()
-        new_node.parent = walk
-        walk.set_left(variable)
-        walk.set_right(new_node)
-
     def convert(self):
         self.translate(self.raw_string , self.root)
 
@@ -153,9 +143,9 @@ class SyntaxTree:
             #Hits the last index
             if index == (len(line) - 1):
                 if char == ')':
-                    walk.parent.set_right(remainder)
+                    walk.set_right(remainder)
                 else:
-                    walk.parent.set_right(remainder + char)
+                    walk.set_right(remainder + char)
                 return
 
             elif char == ')': #one step to the parent and set left when there is no more ')'
@@ -170,7 +160,7 @@ class SyntaxTree:
                     walk.parent.set_right(remainder)
                     self.root = new_parent_node
                     new_parent_node.set_right(Node())
-                    self.translate(line[(index + 1):].strip(), new_parent_node)
+                    self.translate(line[(index + 1):].strip(), new_parent_node.get_right())
                     return
                 else:
                     new_parent_node = Node()
@@ -180,36 +170,46 @@ class SyntaxTree:
                     walk.parent.set_right(remainder)
                     walk.parent.parent = new_parent_node
                     new_parent_node.set_right(Node())
-                    self.translate(line[(index + 1):].strip(), new_parent_node)
+                    self.translate(line[(index + 1):].strip(), new_parent_node.get_right())
                     return
 
             #On one operator character match
             elif char in conditional_single_operator:
-                singular_operator = line[index]
                 two_operator = line[index] + line[index + 1]
-
                 #Check two charactor operators first
                 if two_operator in conditional_operator:
-                    #Reassign operator
-                    if walk.left != None and walk.right != None:
+                    if walk.left == None:
+                        walk.set_left(remainder)
                         walk.set_operator(conditional_operator[two_operator])
-                        self.translate(line[(index + 2):].strip(), walk.get_right())
+                        self.translate(line[(index + 2):].strip(), walk)
                         return
-                    #Assign operator
-                    elif walk != None:
-                        self.connect_node(walk, two_operator, remainder)
-                        self.translate(line[(index + 2):].strip(), walk.get_right())
+                    #Only operator is null
+                    elif walk.operator == None and walk.right != None:
+                        walk.set_operator(conditional_operator[two_operator])
+                        self.translate(line[(index + 2):].strip(), walk)
                         return
-                    else:
-                        print("Connection failed, empty node")
-                #Check single charactor operators
-                elif singular_operator in conditional_operator:
-                    if walk != None:
-                        self.connect_node(walk, singular_operator, remainder)
-                        self.translate(line[(index + 1):].strip(), walk.get_right())
-                        return
-                    else:
-                        print("Connection failed, empty node")
+                    #Only right is null
+                    elif walk.right == None:
+                        if walk == self.root:
+                            new_node = Node()
+                            new_node.set_operator(conditional_operator[two_operator])
+                            walk.parent = new_node
+                            walk.set_right(remainder)
+                            new_node.set_left(walk)
+                            self.root = new_node
+                            self.translate(line[(index + 2):].strip(), new_node)
+                            return
+                        else:
+                            new_node = Node()
+                            new_node.set_operator(conditional_operator[two_operator])
+                            walk.parent.set_left(new_node)
+                            new_node.parent = walk.parent.parent
+                            walk.parent = new_node
+                            walk.set_right(remainder)
+                            new_node.set_left(walk)
+                            self.translate(line[(index + 2):].strip(), new_node)  
+                            return
+                    print("Error")
             remainder += char
 
     def get_py_script(self, walk : Node, script : str):
@@ -227,32 +227,32 @@ class SyntaxTree:
             return script
         return script + ")"
 
-string1 = "a>= 2&&!b !=true" #-> Fail: a >= (2 and (not b != True))
+string1 = "a>= 2&&!b !=true" #-> Pass: ((a >= 2) and not b) != True
 
 syntax = SyntaxTree(string1)
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
-string2 = "a>=2&&!(b!=false)" #-> Pass: a >= (2 and (not b != False))
+string2 = "a>=2&&!(b!=false)" #-> Pass: ((a >= 2) and not b) != False
 
 syntax = SyntaxTree(string2)
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
-string3 = "(a>=2)&&!(b!=false)" #-> Pass : (a >= 2) and (not b != False)
+string3 = "(a>=2)&&!(b!=false)" #-> Fail : ((a >= 2) and not b) != False
 
 syntax = SyntaxTree(string3)
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
 
-string4 = "((a>=2))&&!(b!=4)" #-> Pass - (a >= 2) and (not b != 4)
+string4 = "((a>=2))&&!(b!=4)" #-> Fail - ((a >= 2) and not b) != 4
 
 syntax = SyntaxTree(string4)
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
-string5 = "(e&&(a>=2))&&!(b!=4)" #-> Pass - e and ((a >= 2) and (not b != 4))
+string5 = "(e&&(a>=2))&&!(b!=4)" #-> Fail - (((e and a) >= 2) and not b) != 4
 
 syntax = SyntaxTree(string5)
 print(syntax.get_py_script(syntax.root, ""))

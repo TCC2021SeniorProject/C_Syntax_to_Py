@@ -45,91 +45,76 @@ conditional_operator = {"&&" : "and",
                         "|=" : "|=",
                         "^=" : "^=",}
 
-left_expression = {'!' : 'not'}
-
-right_expression = {'++' : "+= 1",
-                    '--' : "-= 1"}
+expression = {'!' : 'not ',
+              '(' : '(',
+              '++' : "+= 1",
+              '--' : "-= 1"}
 
 class Node:
-    def __init__(self):
+    #Four directional node
+    def __init__(self, value):
         self.parent : Node = None
-        self.left = None
-        self.left_expression = "" # Expresstion like !. ++. --
-        self.operator = ""
-        self.right = None
-        self.right_expression = ""
-        self.visited = False
+        self.left = None 
+        self.right = None 
+        self.value = value      #Operational value
+        self.down : Node = None
+
+    def get_parent(self):
+        return self.parent
+
+    def set_parent(self, parent):
+        self.parent = parent
 
     def get_left(self):
         return self.left
 
     def set_left(self, left):
         self.left = left
-        self.check_left_expression()
-
-    def get_operator(self):
-        return self.operator
-
-    def set_operator(self, operator):
-        self.operator = operator
+        if type(left) is str:
+            self.left = self.check_expression(left)
 
     def get_right(self):
         return self.right
 
     def set_right(self, right):
         self.right = right
-        self.check_right_expression()
+        if type(right) is str:
+            self.right = self.check_expression(right)
 
-    def is_visited(self):
-        return self.visited
+    def get_operator(self):
+        return self.value
 
-    def set_visited(self):
-        self.visited = True
+    def set_operator(self, value):
+        self.value = value
 
-    def check_left_expression(self):
-        if type(self.left) is str:
-            self.left = self.left.strip()
-            if (len(self.left) > 1): #check !
-                if self.left[0:1] in left_expression:
-                    self.left_expression = left_expression[self.left[0:1]]
-                    self.left = (self.left[1:]).strip()
-                    self.left = self.left_expression + " " + self.left
-            if (len(self.left) > 2): #check --, ++
-                if self.left[0:2] in right_expression:    #expression on the left
-                    self.left_expression = right_expression[self.left[0:2]]
-                    self.left = (self.left[2:]).strip()
-                    self.left = self.left + " " + self.left_expression
-                elif self.left[-2:] in right_expression:  #expression on the right
-                    self.left_expression = right_expression[self.left[-2:]]
-                    self.left = (self.left[:-2]).strip()
-                    self.left = self.left + " " + self.left_expression
+    def check_expression(self, remainder):
+        if (len(remainder) > 2): #check --, ++
+            if remainder[0:2] in expression:    #expression on the left
+                return (remainder[2:]).strip() + " " + expression[remainder[0:2]]
+            elif remainder[-2:] in expression:  #expression on the right
+                 return (remainder[:-2]).strip() + " " + expression[remainder[-2:]]
+        return remainder
 
-    def check_right_expression(self):
-        if type(self.right) is str:
-            self.right = self.right.strip()
-            if (len(self.right) > 1): #check !
-                if self.right[0:1] in left_expression:
-                    self.right_expression = left_expression[self.right[0:1]]
-                    self.right = (self.right[1:]).strip()
-                    self.right = self.right_expression + " " + self.right
-            if (len(self.right) > 2): #check --, ++
-                if self.right[0:2] in right_expression:
-                    self.right_expression = right_expression[self.right[0:2]]
-                    self.right = (self.right[2:]).strip()
-                    self.right = self.right + " " + self.right_expression
-                elif self.right[-2:] in right_expression:
-                    self.right_expression = right_expression[self.right[-2:]]
-                    self.right = (self.right[:-2]).strip()
-                    self.right = self.right + " " + self.right_expression
+class CharNode:
+    def __init__(self, value, parent):
+        self.value = value
+        self.next = None
+        self.parent = parent
+    
+    #Next can be Node or CharNode or None
+    def set_next(self, next):
+        self.next = next
+
+    def get_parent(self):
+        return self.parent
 
 class SyntaxTree:
     def __init__(self, raw_string : str):
-        self.root = Node()
+        self.root = Node(None) #Root is always a node
         self.raw_string = self.to_python_keywords(raw_string)
         self.convert()
 
     def to_python_keywords(self, line : str):
-        line = line.replace("(", "")
         line = line.replace("true", "True")
         line = line.replace("false", "False")
         return line
@@ -137,103 +122,141 @@ class SyntaxTree:
     def convert(self):
         self.translate(self.raw_string , self.root)
 
-    def translate(self, line : str, walk : Node):
+    def translate(self, line : str, walk):
         remainder = ""
         for index, char in enumerate(line):
-            #Hits the last index
-            if index == (len(line) - 1):
-                if char == ')':
-                    walk.set_right(remainder)
+            if index == (len(line) - 1):  #Hits the last index
+                if type(walk) is CharNode:
+                    if char == ')':
+                        new_node = CharNode(remainder, walk)
+                        walk.set_next(new_node)
+                    else:
+                        new_node = CharNode(remainder + char, walk)
+                        walk.set_next(new_node)
                 else:
-                    walk.set_right(remainder + char)
+                    if char == ')':
+                        walk.set_right(remainder)
+                    else:
+                        walk.set_right(remainder + char)
                 return
+            elif char == ')': #Go up to next '('
+                if type (walk) is CharNode and remainder != "":
+                    new_node = CharNode(remainder, walk)
+                    walk.set_next(new_node)
+                if type(walk) is Node and remainder != "":
+                    walk.set_right(remainder)
 
-            elif char == ')': #one step to the parent and set left when there is no more ')'
-                if walk == self.root:
-                    self.translate(remainder + line[(index + 1):].strip(), walk)
-                    return
-                elif remainder == "":
-                    continue
-                elif walk.parent == self.root:
-                    new_parent_node = Node()
-                    new_parent_node.set_left(walk.parent)
-                    walk.parent.set_right(remainder)
-                    self.root = new_parent_node
-                    new_parent_node.set_right(Node())
-                    self.translate(line[(index + 1):].strip(), new_parent_node.get_right())
-                    return
-                else:
-                    new_parent_node = Node()
-                    new_parent_node.parent = walk.parent.parent
-                    new_parent_node.set_left(walk.parent)
-                    walk.parent.parent.set_right(new_parent_node)
-                    walk.parent.set_right(remainder)
-                    walk.parent.parent = new_parent_node
-                    new_parent_node.set_right(Node())
-                    self.translate(line[(index + 1):].strip(), new_parent_node.get_right())
-                    return
+                while walk.parent != None:
+                    walk = walk.parent
+                    if walk.value == "(":
+                        break
 
+                self.translate(line[(index + 1):].strip(), walk)
+                return
             #On one operator character match
             elif char in conditional_single_operator:
                 two_operator = line[index] + line[index + 1]
                 #Check two charactor operators first
                 if two_operator in conditional_operator:
-                    if walk.left == None:
-                        walk.set_left(remainder)
-                        walk.set_operator(conditional_operator[two_operator])
-                        self.translate(line[(index + 2):].strip(), walk)
-                        return
-                    #Only operator is null
-                    elif walk.operator == None and walk.right != None:
-                        walk.set_operator(conditional_operator[two_operator])
-                        self.translate(line[(index + 2):].strip(), walk)
-                        return
-                    #Only right is null
-                    elif walk.right == None:
-                        if walk == self.root:
-                            new_node = Node()
-                            new_node.set_operator(conditional_operator[two_operator])
-                            walk.parent = new_node
-                            walk.set_right(remainder)
-                            new_node.set_left(walk)
-                            self.root = new_node
+                    if type(walk) is CharNode:
+                        if walk.next == None:
+                            new_node = Node(conditional_operator[two_operator])
+                            walk.set_next(new_node)
+                            new_node.set_left(remainder)
+                            new_node.set_parent(walk)
                             self.translate(line[(index + 2):].strip(), new_node)
                             return
                         else:
-                            new_node = Node()
-                            new_node.set_operator(conditional_operator[two_operator])
-                            walk.parent.set_left(new_node)
-                            new_node.parent = walk.parent.parent
-                            walk.parent = new_node
-                            walk.set_right(remainder)
-                            new_node.set_left(walk)
-                            self.translate(line[(index + 2):].strip(), new_node)  
+                            if walk.parent == self.root: #Always node
+                                walk.parent.set_operator(conditional_operator[two_operator])
+                                self.translate(line[(index + 2):].strip(), walk.parent)
+                                return
+
+                            new_node = Node(conditional_operator[two_operator])
+                            if type(walk) is CharNode:
+                                walk.set_next(new_node)
+                            else:
+                                walk.set_left(new_node)
+                            new_node.set_parent(walk)
+                            new_node.set_left(remainder)
+                            self.translate(line[(index + 2):].strip(), new_node)
                             return
-                    print("Error")
+                    else:
+                        if walk.left == None: #Normal case
+                            walk.set_left(remainder)
+                            walk.set_operator(conditional_operator[two_operator])
+                            self.translate(line[(index + 2):].strip(), walk) #Update parent
+                            return
+                        elif walk.right == None: #Right is empty
+                            #Take right
+                            new_child = Node(conditional_operator[two_operator])
+                            new_child.set_left(remainder)
+                            new_child.set_parent(walk)
+                            walk.set_right(new_child)
+                            self.translate(line[(index + 2):].strip(), new_child) #Update parent
+                            return
+                        else: #Every children field is full
+                            new_parent = Node(conditional_operator[two_operator])
+                            if walk == self.root:
+                                new_parent.set_left(walk)
+                                walk.set_parent(new_parent)
+                                self.root = new_parent
+                                self.translate(line[(index + 2):].strip(), new_parent) #Update parent
+                                return
+                            else:
+                                if type(walk.parent) is CharNode:
+                                    walk.parent.set_next(new_parent)
+                                else:
+                                    walk.parent.set_left(new_parent)
+                                new_parent.set_parent(walk.parent)
+                                new_parent.set_left(walk)
+                                walk.set_parent(new_parent)
+                                self.translate(line[(index + 2):].strip(), new_parent) #Update parent
+                                return
+
+            if char in expression: #Detects '(', '!'
+                if type(walk) is CharNode:
+                    char_node = CharNode(expression[char], walk)
+                    walk.set_next(char_node)
+                    self.translate(line[(index + 1):].strip(), char_node)
+                    return
+                else:
+                    if walk.left == None:   #Left
+                        char_node = CharNode(expression[char], walk)
+                        walk.set_left(char_node)
+                        self.translate(line[(index + 1):].strip(), char_node)
+                        return
+                    else:                   #Right
+                        char_node = CharNode(expression[char], walk)
+                        walk.set_right(char_node)
+                        self.translate(line[(index + 1):].strip(), char_node)
+                        return
             remainder += char
 
-    def get_py_script(self, walk : Node, script : str):
+    def get_py_script(self, walk, script : str):
         if type(walk) is Node:
             if type(walk.left) is str:
                 script += walk.left
             else:
-                script = self.get_py_script(walk.left, script + "(")
-            script += " " + walk.operator + " "
+                script = self.get_py_script(walk.left, script)
+            script +=  " " + str(walk.value) + " " 
             if type(walk.right) is str:
                 script += walk.right
             else:
-                script =  self.get_py_script(walk.right, script + "(")
-        if walk == self.root:
-            return script
-        return script + ")"
-
+                script = self.get_py_script(walk.right, script)
+        elif type(walk) is CharNode: # CharNode type
+            script += walk.value
+            script = self.get_py_script(walk.next, script)
+            return script + ")" if walk.value == "(" else script
+        return script
+    
 string1 = "a>= 2&&!b !=true" #-> Pass: ((a >= 2) and not b) != True
 
 syntax = SyntaxTree(string1)
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
 
-string2 = "a>=2&&!(b!=false)" #-> Pass: ((a >= 2) and not b) != False
+string2 = "a>=2&&!(b!=false)" #-> Fail: ((a >= 2) and not b) != False
 
 syntax = SyntaxTree(string2)
 print(syntax.get_py_script(syntax.root, ""))
@@ -251,6 +274,7 @@ string4 = "((a>=2))&&!(b!=4)" #-> Fail - ((a >= 2) and not b) != 4
 syntax = SyntaxTree(string4)
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
+
 
 string5 = "(e&&(a>=2))&&!(b!=4)" #-> Fail - (((e and a) >= 2) and not b) != 4
 

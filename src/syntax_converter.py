@@ -54,8 +54,8 @@ class Node:
     #Four directional node
     def __init__(self, value):
         self.parent : Node = None
-        self.left = None 
-        self.right = None 
+        self.left = None
+        self.right = None
         self.value = value      #Operational value
         self.down : Node = None
 
@@ -100,7 +100,7 @@ class CharNode:
         self.value = value
         self.next = None
         self.parent = parent
-    
+
     #Next can be Node or CharNode or None
     def set_next(self, next):
         self.next = next
@@ -156,6 +156,8 @@ class SyntaxTree:
             #On one operator character match
             elif char in conditional_single_operator:
                 two_operator = line[index] + line[index + 1]
+                if not(two_operator in conditional_operator):
+                    two_operator = line[index]
                 #Check two charactor operators first
                 if two_operator in conditional_operator:
                     if type(walk) is CharNode:
@@ -239,7 +241,7 @@ class SyntaxTree:
                 script += walk.left
             else:
                 script = self.get_py_script(walk.left, script)
-            script +=  " " + str(walk.value) + " " 
+            script +=  " " + str(walk.value) + " "
             if type(walk.right) is str:
                 script += walk.right
             else:
@@ -249,7 +251,7 @@ class SyntaxTree:
             script = self.get_py_script(walk.next, script)
             return script + ")" if walk.value == "(" else script
         return script
-    
+
 string1 = "a>= 2&&!b !=true" #-> Pass: ((a >= 2) and not b) != True
 
 syntax = SyntaxTree(string1)
@@ -297,5 +299,11 @@ print("-----------------------------")
 string8 = "a := b++" #-> Pass - a = b += 1
 
 syntax = SyntaxTree(string8)
+print(syntax.get_py_script(syntax.root, ""))
+print("-----------------------------")
+
+string9 = "var = 0" #-> Pass - a = b += 1
+
+syntax = SyntaxTree(string9)
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")

@@ -252,7 +252,7 @@ class SyntaxTree:
             return script + ")" if walk.value == "(" else script
         return script
 
-'''string1 = "a>= 2&&!b !=true" #-> Pass: ((a >= 2) and not b) != True
+string1 = "a>= 2&&!b !=true" #-> Pass: ((a >= 2) and not b) != True
 
 syntax = SyntaxTree(string1)
 print(syntax.get_py_script(syntax.root, ""))
@@ -312,7 +312,7 @@ string10 = "mode == 4 || charge < 10"
 
 syntax = SyntaxTree(string10)
 print(syntax.get_py_script(syntax.root, ""))
-print("-----------------------------")'''
+print("-----------------------------")
 
 string11 = "mode = mode   +   1"
 

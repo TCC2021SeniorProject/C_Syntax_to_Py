@@ -155,14 +155,14 @@ class SyntaxTree:
                 return
             #On one operator character match
             elif char in conditional_single_operator:
-                two_operator = line[index] + line[index + 1]
-                if not(two_operator in conditional_operator):
-                    two_operator = line[index]
-                #Check two charactor operators first
-                if two_operator in conditional_operator:
+                operator = line[index] + line[index + 1]
+                #If not two letter operator, then one letter operator.
+                if not(operator in conditional_operator):
+                    operator = line[index] 
+                if operator in conditional_operator:
                     if type(walk) is CharNode:
                         if walk.next == None:
-                            new_node = Node(conditional_operator[two_operator])
+                            new_node = Node(conditional_operator[operator])
                             walk.set_next(new_node)
                             new_node.set_left(remainder.strip())
                             new_node.set_parent(walk)
@@ -170,11 +170,11 @@ class SyntaxTree:
                             return
                         else:
                             if walk.parent == self.root: #Always node
-                                walk.parent.set_operator(conditional_operator[two_operator])
+                                walk.parent.set_operator(conditional_operator[operator])
                                 self.translate(line[(index + 2):].strip(), walk.parent)
                                 return
 
-                            new_node = Node(conditional_operator[two_operator])
+                            new_node = Node(conditional_operator[operator])
                             if type(walk) is CharNode:
                                 walk.set_next(new_node)
                             else:
@@ -186,19 +186,19 @@ class SyntaxTree:
                     else:
                         if walk.left == None: #Normal case
                             walk.set_left(remainder.strip())
-                            walk.set_operator(conditional_operator[two_operator])
+                            walk.set_operator(conditional_operator[operator])
                             self.translate(line[(index + 2):].strip(), walk) #Update parent
                             return
                         elif walk.right == None: #Right is empty
                             #Take right
-                            new_child = Node(conditional_operator[two_operator])
+                            new_child = Node(conditional_operator[operator])
                             new_child.set_left(remainder.strip())
                             new_child.set_parent(walk)
                             walk.set_right(new_child)
                             self.translate(line[(index + 2):].strip(), new_child) #Update parent
                             return
                         else: #Every children field is full
-                            new_parent = Node(conditional_operator[two_operator])
+                            new_parent = Node(conditional_operator[operator])
                             if walk == self.root:
                                 new_parent.set_left(walk)
                                 walk.set_parent(new_parent)
@@ -252,7 +252,7 @@ class SyntaxTree:
             return script + ")" if walk.value == "(" else script
         return script
 
-string1 = "a>= 2&&!b !=true" #-> Pass: ((a >= 2) and not b) != True
+'''string1 = "a>= 2&&!b !=true" #-> Pass: ((a >= 2) and not b) != True
 
 syntax = SyntaxTree(string1)
 print(syntax.get_py_script(syntax.root, ""))
@@ -311,5 +311,11 @@ print("-----------------------------")
 string10 = "mode == 4 || charge < 10"
 
 syntax = SyntaxTree(string10)
+print(syntax.get_py_script(syntax.root, ""))
+print("-----------------------------")'''
+
+string11 = "mode = mode   +   1"
+
+syntax = SyntaxTree(string11)
 print(syntax.get_py_script(syntax.root, ""))
 print("-----------------------------")
